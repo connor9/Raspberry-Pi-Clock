@@ -1,0 +1,8 @@
+var urls = {
+	'api':			'http://HUEBRIDGEIP/api/HUEBRIDGEUSER/lights/',
+	'group0onoff':	'http://HUEBRIDGEIP/api/HUEBRIDGEUSER/groups/ALLLIGHTSID/action',
+	'group0state':	'http://HUEBRIDGEIP/api/HUEBRIDGEUSER/groups/ALLLIGHTSID/',
+	'bedonoff':		'http://HUEBRIDGEIP/api/HUEBRIDGEUSER/groups/BEDROOMLIGHTID/action',
+	'bedstate':		'http://HUEBRIDGEIP/api/HUEBRIDGEUSER/groups/BEDROOMLIGHTID/',
+	'weatherData':	'https://api.darksky.net/forecast/DARKSKYAPIID/YOURLATITUDE,YOURLONGITUDE?units=UNITS&callback=?''
+}

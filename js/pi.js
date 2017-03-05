@@ -33,37 +33,10 @@ $(function() {
 			url: urls.bedonoff,
 			data: '{"on": false}'
 		});
-		$.ajax({
-			type: 'PUT',
-			url: urls.api+'3/state',
-			data: '{"on": false}'
-		});
-	});
-
-	$('#tvoff').on('click', function(){
-		$(this).removeClass('success');
-		$.ajax({
-			type: 'POST',
-			dataType: 'json',
-			url: urls.tv,
-			data: '{"key": "Standby"}'
-		});
 	});
 
 });
 
-var urls = {
-	'api':			'http://HUEBRIDGEIP/api/HUEUSERID/lights/',
-	'group0onoff':	'http://HUEBRIDGEIP/api/HUEUSERID/groups/0/action',
-	'group0state':	'http://HUEBRIDGEIP/api/HUEUSERID/groups/0/',
-	'bedonoff':		'http://HUEBRIDGEIP/api/HUEUSERID/groups/6/action',
-	'bedstate':		'http://HUEBRIDGEIP/api/HUEUSERID/groups/6/',
-	'tado':			'https://my.tado.com/api/v2/homes/HOMEID/zones/1/state?username=USERNAME&password=PASSWORD',
-	'tv':			'http://TVIP:1925/1/input/key',
-	'watchtv':		'http://TVIP:1925/1/sources/current',
-	'tvon':			'http://TVIP:1925/1/ambilight/measured',
-	'weatherData':	'https://api.darksky.net/forecast/DARKSKYAPIID/YOURLATITUDE,YOURLONGITUDE?units=UNITS&callback=?'
-}
 var moons = {
 	'new':		'<i class="wi wi-moon-alt-new"></i> New Moon',
 	'waxc1':	'<i class="wi wi-moon-alt-waxing-crescent-1"></i> Waxing Crescent',
@@ -100,15 +73,11 @@ var pi = {
 		window.addEventListener('contextmenu', function(e) { e.preventDefault(); })
 		pi.time();
 		pi.weather();
-		pi.tado();
-		pi.tvstatus();
 		pi.hue();
 		setInterval( function() {
 			pi.hue();
-			pi.tvstatus();
 		}, 5000);
 		setInterval( function() {
-			pi.tado();
 			pi.weather();
 		}, 3600000);
 	},
@@ -127,19 +96,10 @@ var pi = {
 			$('.button').addClass('hollow');
 		}
 	},
-	tvstatus: function() {
-		$.getJSON(urls.watchtv, function(data){
-			if(exists(data.id)) {
-				$('#tvoff').addClass('success');
-			} else {
-				$('#tvoff').removeClass('success');
-			}
-
-		});
-	},
 	weather: function() {
 		$.getJSON(urls.weatherData, function(weather){
 
+			console.log(weather);
 			var summary = weather.currently.summary,
 				summaryIcon = weather.currently.icon,
 				num = weather.currently.cloudCover,
@@ -147,7 +107,8 @@ var pi = {
 				sunrise = weather.daily.data[0].sunriseTime,
 				sunset = weather.daily.data[0].sunsetTime,
 				pred = '',
-				moonPhase = '';
+				moonPhase = '',
+				forecast = '';
 			if(summaryIcon == 'wind') {summaryIcon = 'strong-wind'};
 			if(num == 0) {var text = 'Clear', cIcon = 'wi-clear-day'};
 			if(num > 0 && num <= 0.4) {var text = 'Scattered Clouds', cIcon = 'wi-day-cloudy-high'};
@@ -211,41 +172,111 @@ var pi = {
 
 			$('#weather').html(pred);
 
+			// Future Weather
+
+			var futureHourPeriodLength = 7;  //weather.hourly.data.length
+
+			forecast += '<table class="weather moving-window three-hourly-0 one-hourly-7">';
+
+			// TIME
+
+    		forecast += '<thead>';
+    		forecast += '<tr class="time">';
+        	forecast += '<th class="row-title">Time</th>';
+			for(i = 1; i < futureHourPeriodLength; i++) {
+				var unixTimeStamp = weather.hourly.data[i].time;
+				var timestampInMilliSeconds = unixTimeStamp*1000;
+				var date = new Date(timestampInMilliSeconds);
+
+				var formattedDate = date.format('Hi');
+				
+				forecast += '<th class="value hours-1 highlight">';
+				forecast += formattedDate + ' hours';
+				forecast += '</th>';
+			}
+			forecast += '</tr>';
+			forecast += '</thead>';
+
+			forecast += '<tbody>';
+
+			// WEATHER CONDITIONS
+			forecast += '<tr class="weather-type">';
+			forecast += '<th class="row-title">Weather Conditions</th>';
+			for(i = 1; i < futureHourPeriodLength; i++) {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += '<i class="wi wi-forecast-io-'+weather.hourly.data[i].icon+'"></i><br/>' + weather.hourly.data[i].summary;
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+			forecast += '</th>';
+			forecast += '</tr>';
+
+			// TEMPERATURE
+			forecast += '<tr class="weather-type">';
+			forecast += '<th class="row-title">Temperature (°C)</th>';
+			for(i = 1; i < futureHourPeriodLength; i++) {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += weather.hourly.data[i].temperature + '°C';
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+			forecast += '</th>';
+			forecast += '</tr>';
+
+			// WIND SPEED
+			forecast += '<tr class="weather-type">';
+			forecast += '<th class="row-title">Wind Speed</th>';
+			for(i = 1; i < futureHourPeriodLength; i++) {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += weather.hourly.data[i].windSpeed + ' km/h';
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+			forecast += '</th>';
+			forecast += '</tr>';
+
+			forecast += '</tbody>';
+			forecast += '</table>';
+
+			$('#forecast').html(forecast);
+
 		});
 	},
-	tado: function() {
-		$.getJSON(urls.tado, function(data){
-			var current = data.sensorDataPoints.insideTemperature.celsius;
-			$('#tado').html('<strong><i class="wi wi-barometer"></i> tado&deg; '+ current + '<i class="wi wi-celsius"></i></strong>');
-		});
-	},
+
 	hue: function() {
+
+		// TEMP WAY TO RESET STATUS - flickers
+		$('#allon').removeClass('success');
+		$('#bedon').removeClass('success');
+
 		$.getJSON(urls.group0state, function(all){
-
+			
 			$.getJSON(urls.bedstate, function(bed){
-
+			
 				if(all.state.all_on == true && all.state.any_on == true && bed.state.all_on == true && bed.state.any_on == true) {
-					$('button:not(#tvoff)').removeClass('success');
+	
 					$('#allon').addClass('success');
 					$('#bedon').addClass('success');
 				}
 				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == true && bed.state.any_on == true) {
-					$('button:not(#tvoff)').removeClass('success');
+
 					$('#allon').addClass('success');
 					$('#bedon').addClass('success');
 				}
 				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == false && bed.state.any_on == true) {
-					$('button:not(#tvoff)').removeClass('success');
+
 					$('#allon').addClass('success');
 					$('#bedon').addClass('success');
 				}
 				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == false && bed.state.any_on == false) {
-					$('button:not(#tvoff)').removeClass('success');
+
 					$('#bedoff').addClass('success');
 					$('#allon').addClass('success');
 				}
 				if(all.state.all_on == false && all.state.any_on == false) {
-					$('button:not(#tvoff)').removeClass('success');
 					$('#alloff').addClass('success');
 				}
 
