@@ -76,10 +76,10 @@ var pi = {
 		pi.hue();
 		setInterval( function() {
 			pi.hue();
-		}, 5000);
+		}, 5*1000);
 		setInterval( function() {
 			pi.weather();
-		}, 3600000);
+		}, 1000*60);
 	},
 	time: function() {
 		setInterval( function() {
