@@ -191,9 +191,20 @@ var pi = {
 				var formattedDate = date.format('Hi');
 				
 				forecast += '<th class="value hours-1 highlight">';
-				forecast += formattedDate + ' hours';
+				forecast += formattedDate + '<br/>hours';
 				forecast += '</th>';
 			}
+			// Tomorrow
+			var unixTimeStamp = weather.daily.data[1].time;
+			var timestampInMilliSeconds = unixTimeStamp*1000;
+			var date = new Date(timestampInMilliSeconds);
+
+			var formattedDate = date.format('m-d');
+			
+			forecast += '<th class="value hours-1 highlight">';
+			forecast += 'Tomorrow<br />' + formattedDate;
+			forecast += '</th>';
+			
 			forecast += '</tr>';
 			forecast += '</thead>';
 
@@ -209,6 +220,14 @@ var pi = {
 				forecast += '</span>';
 				forecast += '</td>';
 			}
+
+			// Tomorrow 
+			forecast += '<td>';
+			forecast += '<span class="content" style="bottom:-14.75px">';
+			forecast += '<i class="wi wi-forecast-io-'+weather.daily.data[1].icon+'"></i><br/>' + weather.daily.data[1].summary;
+			forecast += '</span>';
+			forecast += '</td>';
+			
 			forecast += '</th>';
 			forecast += '</tr>';
 
@@ -222,6 +241,14 @@ var pi = {
 				forecast += '</span>';
 				forecast += '</td>';
 			}
+
+			// Tomorrow
+			forecast += '<td>';
+			forecast += '<span class="content" style="bottom:-14.75px">';
+			forecast += 'Max - ' + weather.daily.data[1].temperatureMax + '°C';
+			forecast += '</span>';
+			forecast += '</td>';
+			
 			forecast += '</th>';
 			forecast += '</tr>';
 
@@ -235,6 +262,14 @@ var pi = {
 				forecast += '</span>';
 				forecast += '</td>';
 			}
+
+			// Temperature
+			forecast += '<td>';
+			forecast += '<span class="content" style="bottom:-14.75px">';
+			forecast += weather.daily.data[1].windSpeed + ' km/h';
+			forecast += '</span>';
+			forecast += '</td>';
+			
 			forecast += '</th>';
 			forecast += '</tr>';
 
