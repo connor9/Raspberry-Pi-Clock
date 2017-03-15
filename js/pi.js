@@ -2,21 +2,53 @@ $(function() {
 
 	pi.init();
 
-	$('#allon').on('click', function(){
-		$.ajax({
-			type: 'PUT',
-			url: urls.group0onoff,
-			data: '{"on": true, "bri": 100}'
+	$('#bedside').on('click', function(){
+		$.getJSON(urls.bedsidestate, function(bedside){			
+			var url = urls.bedsidestate + 'action';
+			if(bedside.state.any_on == true) {
+				$.ajax({
+					type: 'PUT',
+					url: url,
+					data: '{"on": false}'
+				});
+			} else {
+				$.ajax({
+					type: 'PUT',
+					url: url,
+					data: '{"on": true, "bri": 100, "hue":65280}'
+				});
+			}
 		});
 	});
 
-	$('#alloff').on('click', function(){
+	$('#bedroom').on('click', function(){
+		$.getJSON(urls.bedroomstate, function(bedroom){			
+			var url = urls.bedroomstate + 'action';
+			if(bedroom.state.any_on == true) {
+				$.ajax({
+					type: 'PUT',
+					url: url,
+					data: '{"on": false}'
+				});
+			} else {
+				$.ajax({
+					type: 'PUT',
+					url: url,
+					data: '{"on": true, "bri": 255}'
+				});
+			}
+		});
+	});
+
+	$('#house').on('click', function(){
+		var url = urls.housestate + 'action';
 		$.ajax({
 			type: 'PUT',
-			url: urls.group0onoff,
+			url: url,
 			data: '{"on": false}'
 		});
 	});
+
 
 	$('#bedon').on('click', function(){
 		$.ajax({
@@ -27,13 +59,7 @@ $(function() {
 
 	});
 
-	$('#bedoff').on('click', function(){
-		$.ajax({
-			type: 'PUT',
-			url: urls.bedonoff,
-			data: '{"on": false}'
-		});
-	});
+
 
 });
 
@@ -99,7 +125,6 @@ var pi = {
 	weather: function() {
 		$.getJSON(urls.weatherData, function(weather){
 
-			console.log(weather);
 			var summary = weather.currently.summary,
 				summaryIcon = weather.currently.icon,
 				num = weather.currently.cloudCover,
@@ -174,7 +199,17 @@ var pi = {
 
 			// Future Weather
 
-			var futureHourPeriodLength = 7;  //weather.hourly.data.length
+			var futureHourPeriodLength = 6;  //weather.hourly.data.length
+
+			var futureDayIndexToday = 0;
+			var futureDayIndexTomorrow = 1;
+		
+			// Check if it's early morning, and show today's forecast in the tomorrow spot cause it's still tomorrow really.
+			var d = new Date();
+			if(d.getHours() >= 0 && d.getHours() <= 5) {
+				futureDayIndexToday = -1;
+				futureDayIndexTomorrow = 0;
+			}
 
 			forecast += '<table class="weather moving-window three-hourly-0 one-hourly-7">';
 
@@ -182,7 +217,23 @@ var pi = {
 
     		forecast += '<thead>';
     		forecast += '<tr class="time">';
-        	forecast += '<th class="row-title">Time</th>';
+			forecast += '<th class="row-title">Time</th>';
+
+			if(futureDayIndexToday < 0) {
+				forecast += '<th class="value hours-1 highlight">-</th>';
+			} else {
+				var unixTimeStamp = weather.daily.data[futureDayIndexToday].time;
+				var timestampInMilliSeconds = unixTimeStamp*1000;
+				var date = new Date(timestampInMilliSeconds);
+
+				var formattedDate = date.format('m-d');
+				
+				forecast += '<th class="value hours-1 highlight">';
+				forecast += 'Today<br />' + formattedDate;
+				forecast += '</th>';
+			}
+
+
 			for(i = 1; i < futureHourPeriodLength; i++) {
 				var unixTimeStamp = weather.hourly.data[i].time;
 				var timestampInMilliSeconds = unixTimeStamp*1000;
@@ -194,8 +245,9 @@ var pi = {
 				forecast += formattedDate + '<br/>hours';
 				forecast += '</th>';
 			}
-			// Tomorrow
-			var unixTimeStamp = weather.daily.data[1].time;
+
+			// Today / Tomorrow
+			var unixTimeStamp = weather.daily.data[futureDayIndexTomorrow].time;
 			var timestampInMilliSeconds = unixTimeStamp*1000;
 			var date = new Date(timestampInMilliSeconds);
 
@@ -204,7 +256,7 @@ var pi = {
 			forecast += '<th class="value hours-1 highlight">';
 			forecast += 'Tomorrow<br />' + formattedDate;
 			forecast += '</th>';
-			
+						
 			forecast += '</tr>';
 			forecast += '</thead>';
 
@@ -213,6 +265,17 @@ var pi = {
 			// WEATHER CONDITIONS
 			forecast += '<tr class="weather-type">';
 			forecast += '<th class="row-title">Weather Conditions</th>';
+
+			if(futureDayIndexToday < 0) {
+				forecast += '<td>-</td>';
+			} else {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += '<i class="wi wi-forecast-io-'+ weather.daily.data[futureDayIndexToday].icon + '"></i><br/>' + weather.daily.data[futureDayIndexToday].summary;
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+
 			for(i = 1; i < futureHourPeriodLength; i++) {
 				forecast += '<td>';
 				forecast += '<span class="content" style="bottom:-14.75px">';
@@ -224,16 +287,26 @@ var pi = {
 			// Tomorrow 
 			forecast += '<td>';
 			forecast += '<span class="content" style="bottom:-14.75px">';
-			forecast += '<i class="wi wi-forecast-io-'+weather.daily.data[1].icon+'"></i><br/>' + weather.daily.data[1].summary;
+			forecast += '<i class="wi wi-forecast-io-'+ weather.daily.data[futureDayIndexTomorrow].icon + '"></i><br/>' + weather.daily.data[futureDayIndexTomorrow].summary;
 			forecast += '</span>';
 			forecast += '</td>';
-			
-			forecast += '</th>';
+
 			forecast += '</tr>';
 
 			// TEMPERATURE
 			forecast += '<tr class="weather-type">';
 			forecast += '<th class="row-title">Temperature (°C)</th>';
+
+			if(futureDayIndexToday < 0) {
+				forecast += '<td>-</td>';
+			} else {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += 'Max - ' + weather.daily.data[futureDayIndexToday].temperatureMax + '°C';
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+
 			for(i = 1; i < futureHourPeriodLength; i++) {
 				forecast += '<td>';
 				forecast += '<span class="content" style="bottom:-14.75px">';
@@ -245,16 +318,26 @@ var pi = {
 			// Tomorrow
 			forecast += '<td>';
 			forecast += '<span class="content" style="bottom:-14.75px">';
-			forecast += 'Max - ' + weather.daily.data[1].temperatureMax + '°C';
+			forecast += 'Max - ' + weather.daily.data[futureDayIndexTomorrow].temperatureMax + '°C';
 			forecast += '</span>';
 			forecast += '</td>';
-			
-			forecast += '</th>';
+
 			forecast += '</tr>';
 
 			// WIND SPEED
 			forecast += '<tr class="weather-type">';
 			forecast += '<th class="row-title">Wind Speed</th>';
+
+			if(futureDayIndexToday < 0) {
+				forecast += '<td>-</td>';
+			} else {
+				forecast += '<td>';
+				forecast += '<span class="content" style="bottom:-14.75px">';
+				forecast += weather.daily.data[futureDayIndexToday].windSpeed + ' km/h';
+				forecast += '</span>';
+				forecast += '</td>';
+			}
+		
 			for(i = 1; i < futureHourPeriodLength; i++) {
 				forecast += '<td>';
 				forecast += '<span class="content" style="bottom:-14.75px">';
@@ -266,11 +349,10 @@ var pi = {
 			// Temperature
 			forecast += '<td>';
 			forecast += '<span class="content" style="bottom:-14.75px">';
-			forecast += weather.daily.data[1].windSpeed + ' km/h';
+			forecast += weather.daily.data[futureDayIndexTomorrow].windSpeed + ' km/h';
 			forecast += '</span>';
 			forecast += '</td>';
-			
-			forecast += '</th>';
+
 			forecast += '</tr>';
 
 			forecast += '</tbody>';
@@ -284,39 +366,26 @@ var pi = {
 	hue: function() {
 
 		// TEMP WAY TO RESET STATUS - flickers
-		$('#allon').removeClass('success');
-		$('#bedon').removeClass('success');
+		$('#house').removeClass('success');
+		$('#bedside').removeClass('success');
+		$('#bedroom').removeClass('success');
 
-		$.getJSON(urls.group0state, function(all){
+		$.getJSON(urls.housestate, function(all){
+			if(all.state.any_on) {
+				$('#house').addClass('success');
+			}
+		});
+
+		$.getJSON(urls.bedsidestate, function(bedside){
+			if(bedside.state.any_on) {
+				$('#bedside').addClass('success');
+			}
+		});
 			
-			$.getJSON(urls.bedstate, function(bed){
-			
-				if(all.state.all_on == true && all.state.any_on == true && bed.state.all_on == true && bed.state.any_on == true) {
-	
-					$('#allon').addClass('success');
-					$('#bedon').addClass('success');
-				}
-				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == true && bed.state.any_on == true) {
-
-					$('#allon').addClass('success');
-					$('#bedon').addClass('success');
-				}
-				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == false && bed.state.any_on == true) {
-
-					$('#allon').addClass('success');
-					$('#bedon').addClass('success');
-				}
-				if(all.state.all_on == false && all.state.any_on == true && bed.state.all_on == false && bed.state.any_on == false) {
-
-					$('#bedoff').addClass('success');
-					$('#allon').addClass('success');
-				}
-				if(all.state.all_on == false && all.state.any_on == false) {
-					$('#alloff').addClass('success');
-				}
-
-			});
-
+		$.getJSON(urls.bedroomstate, function(bedroom){
+			if(bedroom.state.any_on) {
+				$('#bedroom').addClass('success');
+			}
 		});
 
 	}
